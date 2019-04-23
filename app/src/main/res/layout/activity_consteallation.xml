@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+    <data>
+        <variable
+            name="viewModel"
+            type="io.swingdev.constellation.viewmodels.ConstellationViewModel" />
+    </data>
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingTop="16dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:gravity="center">
+
+        <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName"
+                android:hint="Enter public key"
+                android:ems="10"
+                android:id="@+id/publicKeyText"/>
+        <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName"
+                android:layout_marginTop="16dp"
+                android:hint="Enter private key"
+                android:ems="10"
+                android:id="@+id/privateKeyText"
+                android:maxLength="99999999"/>
+        <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName"
+                android:layout_marginTop="16dp"
+                android:hint="Enter endpoit URL"
+                android:ems="10"
+                android:id="@+id/endpointText"/>
+        <EditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPersonName"
+                android:layout_marginTop="16dp"
+                android:hint="Enter channel Id"
+                android:ems="10"
+                android:id="@+id/channelIdText"/>
+        <Button
+                android:text="Submit"
+                android:layout_marginTop="16dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/button"/>
+    </LinearLayout>
+</layout>
