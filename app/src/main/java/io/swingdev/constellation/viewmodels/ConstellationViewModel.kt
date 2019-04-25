@@ -7,11 +7,11 @@ import android.util.Log
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
-import io.swingdev.constellation.Services.ConstellationService
+import io.swingdev.constellation.services.ConstellationService
 import io.swingdev.constellation.Data.Coordinates
 import io.swingdev.constellation.Data.RequestDTO
-import io.swingdev.constellation.Models.Message
-import io.swingdev.constellation.Models.Request
+import io.swingdev.constellation.Data.Message
+import io.swingdev.constellation.models.Request
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
@@ -26,13 +26,18 @@ class ConstellationViewModel: ViewModel() {
         if (isRequestingStarted) return
         val request = createRequest(requestDTO) ?: return
 
-        val service = ConstellationService.getInstance(requestDTO.endpoitUrl)
+        val service = ConstellationService.getInstance(requestDTO.endpointUrl)
         Observable.interval(0, TimeUnit.SECONDS, Schedulers.io())
             .flatMap { service.postCoordinates(request) }
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
-                { result -> Log.d("onNext", result) },
-                { error -> Log.e("onError", error.localizedMessage) }
+                {
+                        response -> Log.d("onNext", response.errorMessage)
+                },
+                {
+                        error -> Log.e("onError", error.localizedMessage)
+                    print(error.localizedMessage)
+                }
             )
         isRequestingStarted = true
     }
@@ -42,13 +47,13 @@ class ConstellationViewModel: ViewModel() {
         val signature = createSignature(coordinates, requestDTO.privateKey)
 
         val message = Message(
-            requestDTO.publicKey,
+            requestDTO.publicKey.replace("\\n".toRegex(), "").replace("\\s".toRegex(), ""),
             coordinates.latitude.toString(),
             coordinates.longitude.toString(),
-            signature.toString()
+            String(signature)
         )
 
-        return Request(arrayOf(message), requestDTO.channelId)
+        return Request(arrayOf(message.toString()), requestDTO.channelId)
     }
 
     private fun createSignature(coordinates: Coordinates, privateKeyString: String): ByteArray {

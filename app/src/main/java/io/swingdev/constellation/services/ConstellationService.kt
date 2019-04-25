@@ -1,7 +1,8 @@
-package io.swingdev.constellation.Services
+package io.swingdev.constellation.services
 
 import io.reactivex.Observable
-import io.swingdev.constellation.Models.Request
+import io.swingdev.constellation.models.Request
+import io.swingdev.constellation.models.Response
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -10,7 +11,7 @@ import retrofit2.http.POST
 
 interface ConstellationService {
     @POST("channel/send")
-    fun postCoordinates(@Body request: Request): Observable<String>
+    fun postCoordinates(@Body request: Request): Observable<Response>
 
     companion object {
         private fun create(endpointUrl: String): ConstellationService {

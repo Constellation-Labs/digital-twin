@@ -5,11 +5,11 @@ import android.arch.lifecycle.ViewModelProviders
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
-import android.widget.TextView
 import io.swingdev.constellation.Data.RequestDTO
 import io.swingdev.constellation.utils.InjectorUtils
 import io.swingdev.constellation.utils.LocationProvider
 import io.swingdev.constellation.viewmodels.ConstellationViewModel
+import kotlinx.android.synthetic.main.activity_consteallation.*
 
 class ConstellationActivity : AppCompatActivity() {
 
@@ -34,12 +34,12 @@ class ConstellationActivity : AppCompatActivity() {
 
         val button = findViewById<Button>(R.id.button)
         button.setOnClickListener {
-            val publicKey = findViewById<TextView>(R.id.publicKeyText).text.toString()
-            val privateKey = findViewById<TextView>(R.id.privateKeyText).text.toString()
-            val endpointUrl = findViewById<TextView>(R.id.endpointText).text.toString()
-            val channelId = findViewById<TextView>(R.id.channelIdText).text.toString()
+            val publicKey = publicKeyText.text.toString()
+            val privateKey = privateKeyText.text.toString()
+            val endpointUrl = endpointText.text.toString()
+            val channelId = channelIdText.text.toString()
 
-            if (!publicKey.isEmpty() && !privateKey.isEmpty() && !endpointUrl.isEmpty() && !channelId.isEmpty()) {
+            if (publicKey.isNotEmpty() && privateKey.isNotEmpty() && endpointUrl.isNotEmpty() && channelId.isNotEmpty()) {
                 val requestDto = RequestDTO(publicKey, privateKey, endpointUrl, channelId)
                 viewModel?.startSendingRequests(requestDto)
             }
