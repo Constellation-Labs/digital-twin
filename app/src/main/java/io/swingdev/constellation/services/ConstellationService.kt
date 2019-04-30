@@ -14,7 +14,7 @@ interface ConstellationService {
     fun postCoordinates(@Body coordinatesRequest: CoordinatesRequest): Observable<Response>
 
     companion object {
-        public fun create(endpointUrl: String): ConstellationService {
+        fun create(endpointUrl: String): ConstellationService {
 
             val retrofit = Retrofit.Builder()
                 .addCallAdapterFactory(

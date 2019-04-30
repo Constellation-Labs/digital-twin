@@ -6,7 +6,6 @@ import android.arch.lifecycle.ViewModelProviders
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
-import android.widget.Toast
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
@@ -18,8 +17,7 @@ import io.swingdev.constellation.utils.LocationProvider
 import io.swingdev.constellation.viewmodels.ConstellationViewModel
 import kotlinx.android.synthetic.main.activity_constellation.*
 import java.security.Security
-import android.content.DialogInterface
-
+import io.swingdev.constellation.enums.RequestQuantityType
 
 
 class ConstellationActivity : AppCompatActivity() {
@@ -35,6 +33,10 @@ class ConstellationActivity : AppCompatActivity() {
         Security.insertProviderAt(org.spongycastle.jce.provider.BouncyCastleProvider (), 1)
 
         locationProvider = InjectorUtils.provideLocationProvider(this)
+        locationProvider?.currentLocation?.observe(this, Observer { coordinates ->
+            viewModel?.coordinates?.postValue(coordinates)
+        })
+
         Dexter
             .withActivity(this)
             .withPermissions(
@@ -55,10 +57,6 @@ class ConstellationActivity : AppCompatActivity() {
                 ) {}
             })
 
-        locationProvider?.currentLocation?.observe(this, Observer { coordinates ->
-            viewModel?.coordinates?.postValue(coordinates)
-        })
-
         subscribeUi()
     }
 
@@ -66,37 +64,33 @@ class ConstellationActivity : AppCompatActivity() {
         val factory = InjectorUtils.provideConstellationViewModelFactory()
         viewModel = ViewModelProviders.of(this, factory).get(ConstellationViewModel::class.java)
 
-        periodicButton.setOnClickListener {
-            val publicKey = publicKeyText.text.toString()
-            val privateKey = privateKeyText.text.toString()
-            val endpointUrl = endpointText.text.toString()
-            val channelId = channelIdText.text.toString()
+        periodicButton.setOnClickListener { sendRequest(RequestQuantityType.PERIODIC) }
+        button.setOnClickListener { sendRequest(RequestQuantityType.SINGLE) }
+    }
 
-            if (publicKey.isNotEmpty() && privateKey.isNotEmpty() && endpointUrl.isNotEmpty() && channelId.isNotEmpty()) {
-                val requestDto = RequestDTO(publicKey, privateKey, endpointUrl, channelId)
-                viewModel?.startSendingPeriodicRequests(requestDto)
-            }
-        }
+    private fun sendRequest(type: RequestQuantityType) {
+        val publicKey = publicKeyText.text.toString()
+        val privateKey = privateKeyText.text.toString()
+        val endpointUrl = endpointText.text.toString()
+        val channelId = channelIdText.text.toString()
 
-        button.setOnClickListener {
-            val publicKey = publicKeyText.text.toString()
-            val privateKey = privateKeyText.text.toString()
-            val endpointUrl = endpointText.text.toString()
-            val channelId = channelIdText.text.toString()
-
-            if (publicKey.isNotEmpty() && privateKey.isNotEmpty() && endpointUrl.isNotEmpty() && channelId.isNotEmpty()) {
-                val requestDto = RequestDTO(publicKey, privateKey, endpointUrl, channelId)
-                try {
+        if (publicKey.isNotEmpty() && privateKey.isNotEmpty() && endpointUrl.isNotEmpty() && channelId.isNotEmpty()) {
+            val requestDto = RequestDTO(publicKey, privateKey, endpointUrl, channelId)
+            try {
+                if (type == RequestQuantityType.SINGLE) {
                     viewModel?.sendSingleRequest(requestDto)
-                } catch (error: Exception) {
-                    val builder = AlertDialog.Builder(this)
-                    builder.setMessage(error.toString())
-                    builder.setCancelable(true)
-                    builder.setNegativeButton(
-                        "Ok"
-                    ) { dialog, id -> dialog.cancel() }
-                    builder.create().show()
+                } else if (type == RequestQuantityType.PERIODIC) {
+                    viewModel?.sendPeriodicallyRequests(requestDto)
                 }
+            } catch (error: Exception) {
+                val builder = AlertDialog.Builder(this)
+                builder.setMessage(error.toString())
+                builder.setCancelable(true)
+                builder.setNegativeButton(
+                    "Ok"
+                ) { dialog, _ -> dialog.cancel() }
+
+                builder.create().show()
             }
         }
     }

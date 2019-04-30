@@ -6,7 +6,6 @@ import android.util.Base64
 import android.util.Log
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import io.swingdev.constellation.services.ConstellationService
 import io.swingdev.constellation.data.Coordinates
@@ -19,12 +18,14 @@ import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
 import java.util.concurrent.TimeUnit
 
-class ConstellationViewModel: ViewModel() {
+class ConstellationViewModel : ViewModel() {
 
-    val coordinates: MutableLiveData<Coordinates> = MutableLiveData<Coordinates>().also {
-        it.postValue(Coordinates(0.0,0.0))
-    }
+    val coordinates: MutableLiveData<Coordinates> = MutableLiveData()
     private var isRequestingStarted = false
+
+    init {
+        coordinates.postValue(Coordinates(0.0, 0.0))
+    }
 
     fun sendSingleRequest(requestDTO: RequestDTO) {
         try {
@@ -50,23 +51,29 @@ class ConstellationViewModel: ViewModel() {
         }
     }
 
-    fun startSendingPeriodicRequests(requestDTO: RequestDTO) {
+    fun sendPeriodicallyRequests(requestDTO: RequestDTO) {
         if (isRequestingStarted) return
-        val request = createRequest(requestDTO) ?: return
+        try {
+            val request = createRequest(requestDTO) ?: return
 
-        val service = ConstellationService.create(requestDTO.endpointUrl)
-        Observable.interval(1, TimeUnit.SECONDS, Schedulers.io())
-            .flatMap { service.postCoordinates(request) }
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                {
-                        response -> Log.i("onNext", response.errorMessage)
-                },
-                {
-                        error -> Log.e("onError", error.localizedMessage)
-                }
-            )
-        isRequestingStarted = true
+            val service = ConstellationService.create(requestDTO.endpointUrl)
+            Observable.interval(1, TimeUnit.SECONDS, Schedulers.io())
+                .flatMap { service.postCoordinates(request) }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                    { response ->
+                        Log.i("onNext", response.errorMessage)
+                    },
+                    { error ->
+                        Log.e("onError", error.localizedMessage)
+                        throw error
+                    }
+                )
+            isRequestingStarted = true
+        } catch (error: Exception) {
+            throw error
+            isRequestingStarted = false
+        }
     }
 
     private fun createRequest(requestDTO: RequestDTO): CoordinatesRequest? {
@@ -92,9 +99,9 @@ class ConstellationViewModel: ViewModel() {
 
         try {
             val stringBytes = Base64.decode(string, Base64.DEFAULT)
-            val cleanPrivateKey = privateKeyString.replace("\\n".toRegex(),"").replace("\\s".toRegex(), "")
+            val cleanPrivateKey = privateKeyString.replace("\\n".toRegex(), "").replace("\\s".toRegex(), "")
             var privateKeyBytes = Base64.decode(cleanPrivateKey, Base64.DEFAULT)
-            val keySpec =  PKCS8EncodedKeySpec(privateKeyBytes)
+            val keySpec = PKCS8EncodedKeySpec(privateKeyBytes)
 
             val keyFactory = KeyFactory.getInstance("EC")
             val privateKey = keyFactory.generatePrivate(keySpec)
