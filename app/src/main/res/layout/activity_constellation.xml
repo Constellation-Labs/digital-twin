@@ -13,7 +13,8 @@
             android:paddingLeft="@dimen/linear_layout_padding_offset"
             android:paddingRight="@dimen/linear_layout_padding_offset"
             android:gravity="center"
-            android:background="@color/colorBackground">
+            android:background="@color/colorBackground"
+            android:onClick="hideKeyboard">
 
         <ImageView
                 android:layout_width="match_parent"

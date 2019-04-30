@@ -1,11 +1,14 @@
 package io.swingdev.constellation
 
 import android.Manifest
+import android.app.Activity
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
@@ -18,6 +21,7 @@ import io.swingdev.constellation.viewmodels.ConstellationViewModel
 import kotlinx.android.synthetic.main.activity_constellation.*
 import java.security.Security
 import io.swingdev.constellation.enums.RequestQuantityType
+import io.swingdev.constellation.utils.DisposableManager
 
 
 class ConstellationActivity : AppCompatActivity() {
@@ -58,6 +62,16 @@ class ConstellationActivity : AppCompatActivity() {
             })
 
         subscribeUi()
+    }
+
+    override fun onDestroy() {
+        DisposableManager.dispose()
+        super.onDestroy()
+    }
+
+    fun hideKeyboard(view: View) {
+        val inputMethodManager = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     private fun subscribeUi() {

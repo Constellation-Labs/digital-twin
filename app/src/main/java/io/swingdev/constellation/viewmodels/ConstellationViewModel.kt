@@ -4,21 +4,20 @@ import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.util.Base64
 import android.util.Log
-import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
-import io.swingdev.constellation.services.ConstellationService
 import io.swingdev.constellation.data.Coordinates
 import io.swingdev.constellation.data.RequestDTO
 import io.swingdev.constellation.data.Message
 import io.swingdev.constellation.models.CoordinatesRequest
+import io.swingdev.constellation.services.ConstellationRepository
+import io.swingdev.constellation.utils.DisposableManager
 import java.lang.Exception
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
-import java.util.concurrent.TimeUnit
 
-class ConstellationViewModel : ViewModel() {
+class ConstellationViewModel(private val constellationRepository: ConstellationRepository) : ViewModel() {
 
     val coordinates: MutableLiveData<Coordinates> = MutableLiveData()
     private var isRequestingStarted = false
@@ -31,9 +30,7 @@ class ConstellationViewModel : ViewModel() {
         try {
             val request = createRequest(requestDTO) ?: return
 
-            ConstellationService
-                .create(requestDTO.endpointUrl)
-                .postCoordinates(request)
+            val disposable = constellationRepository.sendSingleRequest(requestDTO.endpointUrl, request)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -43,9 +40,9 @@ class ConstellationViewModel : ViewModel() {
                     },
                     { error ->
                         Log.e("onError", error.localizedMessage)
-                        throw error
                     }
                 )
+            DisposableManager.add(disposable)
         } catch (error: Exception) {
             throw error
         }
@@ -56,9 +53,7 @@ class ConstellationViewModel : ViewModel() {
         try {
             val request = createRequest(requestDTO) ?: return
 
-            val service = ConstellationService.create(requestDTO.endpointUrl)
-            Observable.interval(1, TimeUnit.SECONDS, Schedulers.io())
-                .flatMap { service.postCoordinates(request) }
+            val disposable = constellationRepository.sendPeriodicallyRequest(requestDTO.endpointUrl, request)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                     { response ->
@@ -66,9 +61,10 @@ class ConstellationViewModel : ViewModel() {
                     },
                     { error ->
                         Log.e("onError", error.localizedMessage)
-                        throw error
                     }
                 )
+            DisposableManager.add(disposable)
+
             isRequestingStarted = true
         } catch (error: Exception) {
             throw error
