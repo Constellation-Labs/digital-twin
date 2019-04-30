@@ -3,23 +3,15 @@ package io.swingdev.constellation.utils
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 
-class DisposableManager private constructor() {
+object DisposableManager {
 
-    companion object {
-        fun add(disposable: Disposable) {
-            getInstance().add(disposable)
-        }
+    private var instance: CompositeDisposable = CompositeDisposable()
 
-        fun dispose() {
-            getInstance().dispose()
-        }
+    fun add(disposable: Disposable) {
+        instance.add(disposable)
+    }
 
-        private var instance: CompositeDisposable? = null
-
-        private fun getInstance(): CompositeDisposable {
-            return instance ?: synchronized(this) {
-                instance ?: CompositeDisposable().also { instance = it }
-            }
-        }
+    fun dispose() {
+        instance.dispose()
     }
 }

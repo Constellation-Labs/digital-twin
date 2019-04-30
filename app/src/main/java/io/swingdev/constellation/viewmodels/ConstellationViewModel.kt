@@ -67,8 +67,8 @@ class ConstellationViewModel(private val constellationRepository: ConstellationR
 
             isRequestingStarted = true
         } catch (error: Exception) {
-            throw error
             isRequestingStarted = false
+            throw error
         }
     }
 

@@ -51,7 +51,7 @@ class ConstellationActivity : AppCompatActivity() {
             .withListener(object : MultiplePermissionsListener {
                 override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
                     if (report?.areAllPermissionsGranted() == true) {
-                        locationProvider?.startRetrievingLocation(this@ConstellationActivity)
+                        locationProvider?.startRetrievingLocation()
                     }
                 }
 
