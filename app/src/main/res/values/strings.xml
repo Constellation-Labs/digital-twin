@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Constellation</string>
+    <string name="public_key_text_field">Enter public key</string>
+    <string name="private_key_text_field">Enter private key</string>
+    <string name="endpoint_url_text_field">Enter endpoint URL</string>
+    <string name="channel_id_text_field">Enter channel Id</string>
+    <string name="button_text">Send</string>
+    <string name="periodic_button_text">Send&#10;periodically</string>
+</resources>
