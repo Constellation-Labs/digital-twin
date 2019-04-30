@@ -10,32 +10,39 @@ import android.location.LocationManager
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.util.Log
-import io.swingdev.constellation.Data.Coordinates
+import io.swingdev.constellation.data.Coordinates
 
-class LocationProvider(val locationManager: LocationManager){
+class LocationProvider(val locationManager: LocationManager) {
 
     var currentLocation: MutableLiveData<Coordinates> = MutableLiveData()
     private val locationListener: LocationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
             currentLocation.value = Coordinates(location.latitude, location.longitude)
         }
-        override fun onProviderEnabled(provider: String?) { }
-        override fun onProviderDisabled(provider: String?) { }
-        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) { }
+
+        override fun onProviderEnabled(provider: String?) {}
+        override fun onProviderDisabled(provider: String?) {}
+        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
     }
 
     fun startRetrievingLocation(activity: Activity) {
-        if (!checkAccessCoarseLocationPermission(activity)) { return }
-        if (!checkAccessFineLocationPermission(activity)) { return }
-        if (!checkInternetPermission(activity)) { return }
+        if (!checkAccessCoarseLocationPermission(activity)) {
+            return
+        }
+        if (!checkAccessFineLocationPermission(activity)) {
+            return
+        }
+        if (!checkInternetPermission(activity)) {
+            return
+        }
 
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, locationListener)
     }
 
-    private  fun checkAccessCoarseLocationPermission(activity: Activity): Boolean {
+    private fun checkAccessCoarseLocationPermission(activity: Activity): Boolean {
         if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 21)
             return false
         }
@@ -44,7 +51,8 @@ class LocationProvider(val locationManager: LocationManager){
 
     private fun checkAccessFineLocationPermission(activity: Activity): Boolean {
         if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 21)
             return false
         }
@@ -53,7 +61,8 @@ class LocationProvider(val locationManager: LocationManager){
 
     private fun checkInternetPermission(activity: Activity): Boolean {
         if (ContextCompat.checkSelfPermission(activity, Manifest.permission.INTERNET)
-            != PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.INTERNET), 21)
             return false
         }

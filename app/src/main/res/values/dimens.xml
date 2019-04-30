@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="linear_layout_padding_offset">16dp</dimen>
+    <dimen name="text_view_height">50dp</dimen>
+    <dimen name="first_text_view_top_margin">30dp</dimen>
+    <dimen name="object_top_offset">16dp</dimen>
+</resources>

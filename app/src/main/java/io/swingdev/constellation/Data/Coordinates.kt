@@ -1,5 +1,6 @@
-package io.swingdev.constellation.Data
+package io.swingdev.constellation.data
 
-data class Coordinates(val latitude: Double, val longitude: Double) {
-
-}
+data class Coordinates(
+    val latitude: Double,
+    val longitude: Double
+)

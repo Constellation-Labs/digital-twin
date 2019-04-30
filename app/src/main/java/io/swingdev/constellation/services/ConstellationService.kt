@@ -1,7 +1,7 @@
 package io.swingdev.constellation.services
 
 import io.reactivex.Observable
-import io.swingdev.constellation.models.Request
+import io.swingdev.constellation.models.CoordinatesRequest
 import io.swingdev.constellation.models.Response
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
@@ -11,10 +11,10 @@ import retrofit2.http.POST
 
 interface ConstellationService {
     @POST("channel/send")
-    fun postCoordinates(@Body request: Request): Observable<Response>
+    fun postCoordinates(@Body coordinatesRequest: CoordinatesRequest): Observable<Response>
 
     companion object {
-        private fun create(endpointUrl: String): ConstellationService {
+        public fun create(endpointUrl: String): ConstellationService {
 
             val retrofit = Retrofit.Builder()
                 .addCallAdapterFactory(
@@ -25,15 +25,6 @@ interface ConstellationService {
                 .build()
 
             return retrofit.create(ConstellationService::class.java)
-        }
-
-        private var instance: ConstellationService? = null
-
-        fun getInstance(endpointUrl: String): ConstellationService {
-            return instance ?: synchronized(this) {
-                instance
-                    ?: create(endpointUrl)
-            }
         }
     }
 }

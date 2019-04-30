@@ -1,4 +1,4 @@
-package io.swingdev.constellation.Data
+package io.swingdev.constellation.data
 
 data class Message(
     val publicKey: String,

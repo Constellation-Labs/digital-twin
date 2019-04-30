@@ -1,6 +1,6 @@
 package io.swingdev.constellation.models
 
-data class Request(
-    val messages: Array<String>,
+data class CoordinatesRequest(
+    val messages: List<String>,
     val channelId: String
 )
