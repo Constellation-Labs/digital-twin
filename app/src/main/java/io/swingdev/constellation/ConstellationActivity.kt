@@ -44,7 +44,7 @@ class ConstellationActivity : AppCompatActivity() {
         Dexter
             .withActivity(this)
             .withPermissions(
-                Manifest.permission.ACCESS_COARSE_LOCATION,
+                Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION,
                 Manifest.permission.INTERNET
             )
