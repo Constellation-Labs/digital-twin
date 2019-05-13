@@ -59,7 +59,7 @@ class ConstellationActivity : AppCompatActivity() {
                     permissions: MutableList<PermissionRequest>?,
                     token: PermissionToken?
                 ) {}
-            })
+            }).check()
 
         subscribeUi()
     }
