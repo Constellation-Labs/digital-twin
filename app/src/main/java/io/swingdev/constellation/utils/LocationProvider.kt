@@ -9,7 +9,7 @@ import io.reactivex.subjects.BehaviorSubject
 import io.swingdev.constellation.data.Coordinates
 
 class LocationProvider(private val locationManager: LocationManager) {
-    val currentCoordinates = BehaviorSubject.create<Coordinates>()
+    val currentCoordinates: BehaviorSubject<Coordinates> = BehaviorSubject.create<Coordinates>()
 
     private val locationListener: LocationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
