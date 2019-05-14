@@ -4,25 +4,17 @@ import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import io.swingdev.constellation.models.CoordinatesRequest
 import io.swingdev.constellation.models.Response
-import java.util.concurrent.TimeUnit
 
 class ConstellationRepository private constructor() {
+    private val serviceMap: MutableMap<String, ConstellationService> = mutableMapOf()
 
-    fun sendSingleRequest(endpointUrl: String, request: CoordinatesRequest): Observable<Response> {
+    fun sendRequest(endpointUrl: String, request: CoordinatesRequest): Observable<Response> {
         try {
-            return ConstellationService
-                .create(endpointUrl)
-                .postCoordinates(request)
-        } catch (error: Exception) {
-            throw error
-        }
-    }
-
-    fun sendPeriodicallyRequest(endpointUrl: String, request: CoordinatesRequest): Observable<Response> {
-        try {
-            val service = ConstellationService.create(endpointUrl)
-            return Observable.interval(1, TimeUnit.SECONDS, Schedulers.io())
-                .flatMap { service.postCoordinates(request) }
+            return (serviceMap[endpointUrl] ?: ConstellationService.create(endpointUrl)
+                .also {
+                    serviceMap[endpointUrl] = it
+                }).postCoordinates(request)
+                .subscribeOn(Schedulers.io())
         } catch (error: Exception) {
             throw error
         }

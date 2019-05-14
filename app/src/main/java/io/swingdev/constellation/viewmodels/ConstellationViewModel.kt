@@ -1,36 +1,39 @@
 package io.swingdev.constellation.viewmodels
 
-import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.util.Base64
 import android.util.Log
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import io.swingdev.constellation.data.Coordinates
-import io.swingdev.constellation.data.RequestDTO
 import io.swingdev.constellation.data.Message
+import io.swingdev.constellation.data.RequestDTO
 import io.swingdev.constellation.models.CoordinatesRequest
 import io.swingdev.constellation.services.ConstellationRepository
 import io.swingdev.constellation.utils.DisposableManager
-import java.lang.Exception
+import io.swingdev.constellation.utils.LocationProvider
+import java.nio.charset.Charset
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
+import java.util.concurrent.TimeUnit
 
-class ConstellationViewModel(private val constellationRepository: ConstellationRepository) : ViewModel() {
-
-    val coordinates: MutableLiveData<Coordinates> = MutableLiveData()
+class ConstellationViewModel(
+    private val constellationRepository: ConstellationRepository,
+    private val locationProvider: LocationProvider
+) : ViewModel() {
     private var isRequestingStarted = false
 
-    init {
-        coordinates.postValue(Coordinates(0.0, 0.0))
+    fun subscribeLocationChanges() {
+        locationProvider.startRetrievingLocation()
     }
 
     fun sendSingleRequest(requestDTO: RequestDTO) {
         try {
             val request = createRequest(requestDTO) ?: return
 
-            val disposable = constellationRepository.sendSingleRequest(requestDTO.endpointUrl, request)
+            val disposable = constellationRepository.sendRequest(requestDTO.endpointUrl, request)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -50,31 +53,29 @@ class ConstellationViewModel(private val constellationRepository: ConstellationR
 
     fun sendPeriodicallyRequests(requestDTO: RequestDTO) {
         if (isRequestingStarted) return
-        try {
-            val request = createRequest(requestDTO) ?: return
 
-            val disposable = constellationRepository.sendPeriodicallyRequest(requestDTO.endpointUrl, request)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                    { response ->
-                        Log.i("onNext", response.errorMessage)
-                    },
-                    { error ->
-                        Log.e("onError", error.localizedMessage)
-                    }
-                )
-            DisposableManager.add(disposable)
+        Observable.interval(2, TimeUnit.SECONDS)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .map {
+                requestDTO.endpointUrl to (createRequest(requestDTO)
+                    ?: throw IllegalArgumentException("Error to init Request"))
+            }.flatMap { (url, request) ->
+                Log.i("MSG", request.messages[0])
+                constellationRepository.sendRequest(url, request)
+            }.subscribe({ response ->
+                Log.i("onNext", response.errorMessage)
+            }, { error ->
+                isRequestingStarted = false
+                Log.e("onError", error.localizedMessage)
+            }).let(DisposableManager::add)
 
-            isRequestingStarted = true
-        } catch (error: Exception) {
-            isRequestingStarted = false
-            throw error
-        }
+        isRequestingStarted = true
     }
 
     private fun createRequest(requestDTO: RequestDTO): CoordinatesRequest? {
         try {
-            val coordinates = coordinates.value ?: return null
+            val coordinates = locationProvider.currentCoordinates.value ?: return null
             val signature = createSignature(coordinates, requestDTO.privateKey)
             val message = Message(
                 requestDTO.publicKey.replace("\\n".toRegex(), "").replace("\\s".toRegex(), ""),
@@ -91,21 +92,25 @@ class ConstellationViewModel(private val constellationRepository: ConstellationR
     }
 
     private fun createSignature(coordinates: Coordinates, privateKeyString: String): ByteArray {
-        val string = coordinates.latitude.toString() + coordinates.longitude.toString()
-
         try {
-            val stringBytes = Base64.decode(string, Base64.DEFAULT)
-            val cleanPrivateKey = privateKeyString.replace("\\n".toRegex(), "").replace("\\s".toRegex(), "")
-            var privateKeyBytes = Base64.decode(cleanPrivateKey, Base64.DEFAULT)
-            val keySpec = PKCS8EncodedKeySpec(privateKeyBytes)
+            val coordinateBytes = (coordinates.latitude.toString() + coordinates.longitude.toString())
+                .toByteArray(Charset.defaultCharset())
+                .let { bytes ->
+                    Base64.encode(bytes, Base64.DEFAULT)
+                }
 
-            val keyFactory = KeyFactory.getInstance("EC")
-            val privateKey = keyFactory.generatePrivate(keySpec)
+            val privateKey = privateKeyString.replace("\\n".toRegex(), "")
+                .replace("\\s".toRegex(), "")
+                .let { key ->
+                    PKCS8EncodedKeySpec(Base64.decode(key, Base64.DEFAULT))
+                }.let { keySpec ->
+                    KeyFactory.getInstance("EC").generatePrivate(keySpec)
+                }
 
-            val signatureInstance = Signature.getInstance("SHA512withECDSA", "SC")
-            signatureInstance.initSign(privateKey)
-            signatureInstance.update(stringBytes)
-            return signatureInstance.sign()
+            return Signature.getInstance("SHA512withECDSA", "SC").apply {
+                initSign(privateKey)
+                update(coordinateBytes)
+            }.sign()
         } catch (error: Exception) {
             error.printStackTrace()
             throw error
