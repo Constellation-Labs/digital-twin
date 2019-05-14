@@ -63,7 +63,8 @@ class ConstellationViewModel(
             }.flatMap { (url, request) ->
                 Log.i("MSG", request.messages[0])
                 constellationRepository.sendRequest(url, request)
-            }.subscribe({ response ->
+            }.retry()
+            .subscribe({ response ->
                 Log.i("onNext", response.errorMessage)
             }, { error ->
                 isRequestingStarted = false
