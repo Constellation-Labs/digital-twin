@@ -3,7 +3,9 @@ package io.swingdev.constellation.viewmodels
 import android.arch.lifecycle.ViewModel
 import android.util.Base64
 import android.util.Log
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.functions.BiFunction
 import io.reactivex.schedulers.Schedulers
 import io.swingdev.constellation.data.Coordinates
 import io.swingdev.constellation.data.Message
@@ -16,6 +18,7 @@ import java.nio.charset.Charset
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
+import java.util.concurrent.TimeUnit
 
 class ConstellationViewModel(
     private val constellationRepository: ConstellationRepository,
@@ -31,7 +34,7 @@ class ConstellationViewModel(
         try {
             val request = createRequest(requestDTO) ?: return
 
-            val disposable = constellationRepository.sendSingleRequest(requestDTO.endpointUrl, request)
+            val disposable = constellationRepository.sendRequest(requestDTO.endpointUrl, request)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -54,17 +57,21 @@ class ConstellationViewModel(
         try {
             val request = createRequest(requestDTO) ?: return
 
-            val disposable = constellationRepository.sendPeriodicallyRequest(requestDTO.endpointUrl, request)
+            Observable.zip(
+                Observable.interval(1, TimeUnit.SECONDS),
+                Observable.just(requestDTO.endpointUrl to request),
+                BiFunction { _: Long, requestData: Pair<String, CoordinatesRequest> ->
+                    requestData
+                }
+            ).subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                    { response ->
-                        Log.i("onNext", response.errorMessage)
-                    },
-                    { error ->
-                        Log.e("onError", error.localizedMessage)
-                    }
-                )
-            DisposableManager.add(disposable)
+                .flatMap { (url, request) ->
+                    constellationRepository.sendRequest(url, request)
+                }.subscribe({ response ->
+                    Log.i("onNext", response.errorMessage)
+                }, { error ->
+                    Log.e("onError", error.localizedMessage)
+                }).let(DisposableManager::add)
 
             isRequestingStarted = true
         } catch (error: Exception) {
