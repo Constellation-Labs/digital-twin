@@ -1,29 +1,29 @@
 package io.swingdev.constellation.viewmodels
 
-import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 import android.util.Base64
 import android.util.Log
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import io.swingdev.constellation.data.Coordinates
-import io.swingdev.constellation.data.RequestDTO
 import io.swingdev.constellation.data.Message
+import io.swingdev.constellation.data.RequestDTO
 import io.swingdev.constellation.models.CoordinatesRequest
 import io.swingdev.constellation.services.ConstellationRepository
 import io.swingdev.constellation.utils.DisposableManager
-import java.lang.Exception
+import io.swingdev.constellation.utils.LocationProvider
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
 
-class ConstellationViewModel(private val constellationRepository: ConstellationRepository) : ViewModel() {
-
-    val coordinates: MutableLiveData<Coordinates> = MutableLiveData()
+class ConstellationViewModel(
+    private val constellationRepository: ConstellationRepository,
+    private val locationProvider: LocationProvider
+) : ViewModel() {
     private var isRequestingStarted = false
 
-    init {
-        coordinates.postValue(Coordinates(0.0, 0.0))
+    fun subscribeLocationChanges() {
+        locationProvider.startRetrievingLocation()
     }
 
     fun sendSingleRequest(requestDTO: RequestDTO) {
@@ -74,7 +74,7 @@ class ConstellationViewModel(private val constellationRepository: ConstellationR
 
     private fun createRequest(requestDTO: RequestDTO): CoordinatesRequest? {
         try {
-            val coordinates = coordinates.value ?: return null
+            val coordinates = locationProvider.currentCoordinates.value ?: return null
             val signature = createSignature(coordinates, requestDTO.privateKey)
             val message = Message(
                 requestDTO.publicKey.replace("\\n".toRegex(), "").replace("\\s".toRegex(), ""),

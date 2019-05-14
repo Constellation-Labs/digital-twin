@@ -2,11 +2,10 @@ package io.swingdev.constellation
 
 import android.Manifest
 import android.app.Activity
-import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v7.app.AlertDialog
+import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import com.karumi.dexter.Dexter
@@ -15,18 +14,15 @@ import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import io.swingdev.constellation.data.RequestDTO
+import io.swingdev.constellation.enums.RequestQuantityType
+import io.swingdev.constellation.utils.DisposableManager
 import io.swingdev.constellation.utils.InjectorUtils
-import io.swingdev.constellation.utils.LocationProvider
 import io.swingdev.constellation.viewmodels.ConstellationViewModel
 import kotlinx.android.synthetic.main.activity_constellation.*
 import java.security.Security
-import io.swingdev.constellation.enums.RequestQuantityType
-import io.swingdev.constellation.utils.DisposableManager
 
 
 class ConstellationActivity : AppCompatActivity() {
-
-    private var locationProvider: LocationProvider? = null
     private var viewModel: ConstellationViewModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,11 +31,6 @@ class ConstellationActivity : AppCompatActivity() {
         setContentView(R.layout.activity_constellation)
 
         Security.insertProviderAt(org.spongycastle.jce.provider.BouncyCastleProvider (), 1)
-
-        locationProvider = InjectorUtils.provideLocationProvider(this)
-        locationProvider?.currentLocation?.observe(this, Observer { coordinates ->
-            viewModel?.coordinates?.postValue(coordinates)
-        })
 
         Dexter
             .withActivity(this)
@@ -51,7 +42,7 @@ class ConstellationActivity : AppCompatActivity() {
             .withListener(object : MultiplePermissionsListener {
                 override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
                     if (report?.areAllPermissionsGranted() == true) {
-                        locationProvider?.startRetrievingLocation()
+                        viewModel?.subscribeLocationChanges()
                     }
                 }
 
@@ -75,7 +66,7 @@ class ConstellationActivity : AppCompatActivity() {
     }
 
     private fun subscribeUi() {
-        val factory = InjectorUtils.provideConstellationViewModelFactory()
+        val factory = InjectorUtils.provideConstellationViewModelFactory(this)
         viewModel = ViewModelProviders.of(this, factory).get(ConstellationViewModel::class.java)
 
         periodicButton.setOnClickListener { sendRequest(RequestQuantityType.PERIODIC) }

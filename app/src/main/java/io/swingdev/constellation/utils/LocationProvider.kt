@@ -1,19 +1,19 @@
 package io.swingdev.constellation.utils
 
 import android.annotation.SuppressLint
-import android.arch.lifecycle.MutableLiveData
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import io.reactivex.subjects.BehaviorSubject
 import io.swingdev.constellation.data.Coordinates
 
 class LocationProvider(private val locationManager: LocationManager) {
+    val currentCoordinates = BehaviorSubject.create<Coordinates>()
 
-    var currentLocation: MutableLiveData<Coordinates> = MutableLiveData()
     private val locationListener: LocationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
-            currentLocation.value = Coordinates(location.latitude, location.longitude)
+            currentCoordinates.onNext(Coordinates(location.latitude, location.longitude))
         }
 
         override fun onProviderEnabled(provider: String?) {}

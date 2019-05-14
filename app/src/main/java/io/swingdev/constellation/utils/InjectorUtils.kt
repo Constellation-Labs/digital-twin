@@ -1,6 +1,5 @@
 package io.swingdev.constellation.utils
 
-import android.app.Activity
 import android.content.Context
 import android.location.LocationManager
 import io.swingdev.constellation.services.ConstellationRepository
@@ -12,13 +11,14 @@ object InjectorUtils {
         return ConstellationRepository.getInstance()
     }
 
-    fun provideConstellationViewModelFactory(): ConstellationViewModelFactory {
+    fun provideConstellationViewModelFactory(context: Context): ConstellationViewModelFactory {
         val repo = provideConstellationRepository()
-        return ConstellationViewModelFactory(repo)
+        val locationProvider = provideLocationProvider(context)
+        return ConstellationViewModelFactory(repo, locationProvider)
     }
 
-    fun provideLocationProvider(activity: Activity): LocationProvider {
-        val locationManager = activity.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    fun provideLocationProvider(context: Context): LocationProvider {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         return LocationProvider(locationManager)
     }
 }
