@@ -30,6 +30,8 @@ class ConstellationActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_constellation)
 
+        subscribeUi()
+
         Security.insertProviderAt(org.spongycastle.jce.provider.BouncyCastleProvider (), 1)
 
         Dexter
@@ -51,8 +53,6 @@ class ConstellationActivity : AppCompatActivity() {
                     token: PermissionToken?
                 ) {}
             }).check()
-
-        subscribeUi()
     }
 
     override fun onDestroy() {

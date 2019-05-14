@@ -5,7 +5,6 @@ import android.util.Base64
 import android.util.Log
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.functions.BiFunction
 import io.reactivex.schedulers.Schedulers
 import io.swingdev.constellation.data.Coordinates
 import io.swingdev.constellation.data.Message
@@ -54,30 +53,24 @@ class ConstellationViewModel(
 
     fun sendPeriodicallyRequests(requestDTO: RequestDTO) {
         if (isRequestingStarted) return
-        try {
-            val request = createRequest(requestDTO) ?: return
 
-            Observable.zip(
-                Observable.interval(1, TimeUnit.SECONDS),
-                Observable.just(requestDTO.endpointUrl to request),
-                BiFunction { _: Long, requestData: Pair<String, CoordinatesRequest> ->
-                    requestData
-                }
-            ).subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .flatMap { (url, request) ->
-                    constellationRepository.sendRequest(url, request)
-                }.subscribe({ response ->
-                    Log.i("onNext", response.errorMessage)
-                }, { error ->
-                    Log.e("onError", error.localizedMessage)
-                }).let(DisposableManager::add)
+        Observable.interval(2, TimeUnit.SECONDS)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .map {
+                requestDTO.endpointUrl to (createRequest(requestDTO)
+                    ?: throw IllegalArgumentException("Error to init Request"))
+            }.flatMap { (url, request) ->
+                Log.i("MSG", request.messages[0])
+                constellationRepository.sendRequest(url, request)
+            }.subscribe({ response ->
+                Log.i("onNext", response.errorMessage)
+            }, { error ->
+                isRequestingStarted = false
+                Log.e("onError", error.localizedMessage)
+            }).let(DisposableManager::add)
 
-            isRequestingStarted = true
-        } catch (error: Exception) {
-            isRequestingStarted = false
-            throw error
-        }
+        isRequestingStarted = true
     }
 
     private fun createRequest(requestDTO: RequestDTO): CoordinatesRequest? {

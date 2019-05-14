@@ -1,6 +1,7 @@
 package io.swingdev.constellation.services
 
 import io.reactivex.Observable
+import io.reactivex.schedulers.Schedulers
 import io.swingdev.constellation.models.CoordinatesRequest
 import io.swingdev.constellation.models.Response
 
@@ -13,6 +14,7 @@ class ConstellationRepository private constructor() {
                 .also {
                     serviceMap[endpointUrl] = it
                 }).postCoordinates(request)
+                .subscribeOn(Schedulers.io())
         } catch (error: Exception) {
             throw error
         }
