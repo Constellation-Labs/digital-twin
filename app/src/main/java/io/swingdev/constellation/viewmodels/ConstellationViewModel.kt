@@ -5,13 +5,15 @@ import android.util.Base64
 import android.util.Log
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
+import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import io.swingdev.constellation.data.Coordinates
 import io.swingdev.constellation.data.Message
 import io.swingdev.constellation.data.RequestDTO
 import io.swingdev.constellation.models.CoordinatesRequest
 import io.swingdev.constellation.services.ConstellationRepository
-import io.swingdev.constellation.utils.DisposableManager
 import io.swingdev.constellation.utils.LocationProvider
 import java.nio.charset.Charset
 import java.security.KeyFactory
@@ -23,6 +25,7 @@ class ConstellationViewModel(
     private val constellationRepository: ConstellationRepository,
     private val locationProvider: LocationProvider
 ) : ViewModel() {
+    private val compositeDisposable = CompositeDisposable()
     private var isRequestingStarted = false
 
     fun subscribeLocationChanges() {
@@ -33,19 +36,15 @@ class ConstellationViewModel(
         try {
             val request = createRequest(requestDTO) ?: return
 
-            val disposable = constellationRepository.sendRequest(requestDTO.endpointUrl, request)
+            constellationRepository.sendRequest(requestDTO.endpointUrl, request)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                    { response ->
-                        Log.i("onNext", response.errorMessage)
-                        Log.d("onNext", response.errorMessage)
-                    },
-                    { error ->
-                        Log.e("onError", error.localizedMessage)
-                    }
-                )
-            DisposableManager.add(disposable)
+                .subscribeBy(onError = { error ->
+                    Log.e("onError", error.localizedMessage)
+                }, onNext = { response ->
+                    Log.i("onNext", response.errorMessage)
+                    Log.d("onNext", response.errorMessage)
+                }).addTo(compositeDisposable)
         } catch (error: Exception) {
             throw error
         }
@@ -64,14 +63,18 @@ class ConstellationViewModel(
                 Log.i("MSG", request.messages[0])
                 constellationRepository.sendRequest(url, request)
             }.retry()
-            .subscribe({ response ->
-                Log.i("onNext", response.errorMessage)
-            }, { error ->
+            .subscribeBy(onError = { error ->
                 isRequestingStarted = false
                 Log.e("onError", error.localizedMessage)
-            }).let(DisposableManager::add)
+            }, onNext = { response ->
+                Log.i("onNext", response.errorMessage)
+            }).addTo(compositeDisposable)
 
         isRequestingStarted = true
+    }
+
+    override fun onCleared() {
+        compositeDisposable.clear()
     }
 
     private fun createRequest(requestDTO: RequestDTO): CoordinatesRequest? {

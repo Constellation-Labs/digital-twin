@@ -15,7 +15,6 @@ import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 import io.swingdev.constellation.data.RequestDTO
 import io.swingdev.constellation.enums.RequestQuantityType
-import io.swingdev.constellation.utils.DisposableManager
 import io.swingdev.constellation.utils.InjectorUtils
 import io.swingdev.constellation.viewmodels.ConstellationViewModel
 import kotlinx.android.synthetic.main.activity_constellation.*
@@ -53,11 +52,6 @@ class ConstellationActivity : AppCompatActivity() {
                     token: PermissionToken?
                 ) {}
             }).check()
-    }
-
-    override fun onDestroy() {
-        DisposableManager.dispose()
-        super.onDestroy()
     }
 
     fun hideKeyboard(view: View) {
